@@ -22,9 +22,11 @@ type State = {
   board: TBoard;
   turn: TTurn;
   endCondition: TEndCondition | null;
+  isTwoPlayer: boolean;
 };
 
 type Actions =
+  | { type: "toggle_two_player" }
   | {
       type: "player_move";
       payload: {
@@ -41,6 +43,12 @@ type Actions =
 
 const reducer = (state: State, action: Actions) => {
   switch (action.type) {
+    case "toggle_two_player": {
+      return {
+        ...state,
+        isTwoPlayer: !state.isTwoPlayer,
+      };
+    }
     case "player_move": {
       const { colIdx } = action.payload;
 
@@ -110,13 +118,14 @@ const initialGameState: State = {
   board: INITIAL_BOARD,
   turn: TURNS.PLAYER,
   endCondition: null,
+  isTwoPlayer: false,
 };
 
 export const Connect4Game = () => {
   const { width, height } = useWindowSize();
 
   const [gameState, dispatch] = useReducer(reducer, initialGameState);
-  const { board, turn, endCondition } = gameState;
+  const { board, turn, endCondition, isTwoPlayer } = gameState;
   const [prevTurn, setPrevTurn] = useState<TTurn>(turn);
 
   const isEndCondition = endCondition !== null;
@@ -126,11 +135,26 @@ export const Connect4Game = () => {
   const isOpponentWinner = checkOpponentWinner({ endCondition });
   const isDraw = checkDraw({ endCondition });
 
-  const handlePlayerMove = ({ colIdx }: { colIdx: number }) => {
-    dispatch({ type: "player_move", payload: { colIdx } });
+  const handleToggleTwoPlayer = () => {
+    dispatch({ type: "toggle_two_player" });
   };
 
-  const handleOpponentMove = () => {
+  const handleManualMove = ({ colIdx }: { colIdx: number }) => {
+    if (isTwoPlayer) {
+      dispatch({
+        type: isPlayerTurn ? "player_move" : "opponent_move",
+        payload: { colIdx },
+      });
+      return;
+    }
+
+    dispatch({
+      type: "player_move",
+      payload: { colIdx },
+    });
+  };
+
+  const handleAutomatedOpponentMove = () => {
     const colIdx = minimax({ board });
     dispatch({ type: "opponent_move", payload: { colIdx } });
   };
@@ -142,8 +166,8 @@ export const Connect4Game = () => {
 
   // Handling the automated opponent move
   if (turn !== prevTurn) {
-    if (!isEndCondition && isOpponentTurn) {
-      handleOpponentMove();
+    if (!isTwoPlayer && !isEndCondition && isOpponentTurn) {
+      handleAutomatedOpponentMove();
     }
     setPrevTurn(turn);
   }
@@ -154,6 +178,20 @@ export const Connect4Game = () => {
       <div className="flex flex-col items-center p-8 gap-10">
         <div className="flex flex-col items-center gap-3">
           <h1 className="text-5xl font-rubik">Connect 4</h1>
+          <div className="flex items-center gap-2">
+            <label
+              htmlFor="two-player-checkbox"
+              className="font-rubik text-2xl"
+            >
+              Two Player Mode
+            </label>
+            <input
+              id="two-player-checkbox"
+              type="checkbox"
+              className="w-6 h-6"
+              onClick={handleToggleTwoPlayer}
+            />
+          </div>
           {!isEndCondition && (
             <p className="text-3xl font-rubik">
               Turn:{" "}
@@ -195,7 +233,7 @@ export const Connect4Game = () => {
         <div>
           {!isEndCondition && (
             <div className="flex gap-3 px-8 pb-4 h-16">
-              {isPlayerTurn &&
+              {(isPlayerTurn || isTwoPlayer) &&
                 board[0].map((_, colIdx) => {
                   const isPlayableColumn = checkPlayableColumn({
                     board,
@@ -211,7 +249,7 @@ export const Connect4Game = () => {
                         <button
                           className="border border-blue-600 rounded-full p-2"
                           aria-label={`Take move in column ${colIdx + 1}`}
-                          onClick={() => handlePlayerMove({ colIdx })}
+                          onClick={() => handleManualMove({ colIdx })}
                         >
                           <ChevronDown size={24} className="text-blue-600" />
                         </button>
