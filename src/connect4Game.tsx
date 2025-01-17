@@ -54,7 +54,11 @@ const reducer = (state: State, action: Actions) => {
         boardDraft[rowIdx][colIdx] = DISCS.PLAYER;
       });
 
-      const newEndCondition = getEndCondition({ board: newBoard });
+      const newEndCondition = getEndCondition({
+        board: newBoard,
+        rowIdx,
+        colIdx,
+      });
 
       return {
         ...state,
@@ -76,7 +80,11 @@ const reducer = (state: State, action: Actions) => {
         boardDraft[rowIdx][colIdx] = DISCS.OPPONENT;
       });
 
-      const newEndCondition = getEndCondition({ board: newBoard });
+      const newEndCondition = getEndCondition({
+        board: newBoard,
+        rowIdx,
+        colIdx,
+      });
 
       return {
         ...state,

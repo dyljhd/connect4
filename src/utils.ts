@@ -72,16 +72,24 @@ export const checkPlayableColumn = ({
 
 export const getEndCondition = ({
   board,
+  rowIdx,
+  colIdx,
 }: {
   board: TBoard;
+  rowIdx: number;
+  colIdx: number;
 }): TEndCondition | null => {
   const maxRowsIdx = board.length - 1; // 6 - 1 = 5 (as index starts from 0)
   const maxColsIdx = board[0].length - 1; // 7 - 1 = 6 (as index starts from 0)
 
   // Directions [rowIdx, colIdx]
   const directions = [
+    [-1, 0], // Up
+    [0, -1], // Left
     [0, 1], // Right
     [1, 0], // Down
+    [-1, 1], // Right-Up
+    [-1, -1], // Left-Up
     [1, 1], // Right-Down
     [1, -1], // Left-Down
   ];
@@ -92,7 +100,6 @@ export const getEndCondition = ({
     );
   };
 
-  // Check a direction for a streak of 4
   const checkDirection = ({
     rowIdx,
     colIdx,
@@ -108,6 +115,7 @@ export const getEndCondition = ({
   }) => {
     let count = 0;
 
+    // Check for a four streak in a particular direction
     for (let i = 0; i < 4; i++) {
       const newRowIdx = rowIdx + i * dirRowIdx;
       const newColIdx = colIdx + i * dirColIdx;
@@ -128,30 +136,25 @@ export const getEndCondition = ({
     return count === 4;
   };
 
-  let isEmptyDisc = false;
+  const disc = board[rowIdx][colIdx];
 
-  // Iterate through each cell in the grid
-  for (let rowIdx = 0; rowIdx <= maxRowsIdx; rowIdx++) {
-    for (let colIdx = 0; colIdx <= maxColsIdx; colIdx++) {
-      const disc = board[rowIdx][colIdx];
-
-      if (disc !== DISCS.EMPTY) {
-        for (const [dirRowIdx, dirColIdx] of directions) {
-          const isWinner = checkDirection({
-            rowIdx,
-            colIdx,
-            dirRowIdx,
-            dirColIdx,
-            disc,
-          });
-
-          if (isWinner) return disc;
-        }
-      }
-
-      isEmptyDisc = true;
+  for (const [dirRowIdx, dirColIdx] of directions) {
+    if (
+      !checkDirection({
+        rowIdx,
+        colIdx,
+        dirRowIdx,
+        dirColIdx,
+        disc,
+      })
+    ) {
+      continue;
     }
+
+    return disc;
   }
 
-  return isEmptyDisc ? null : 0;
+  const isPlayable = board.flat().some((disc) => disc === DISCS.EMPTY);
+
+  return isPlayable ? null : 0;
 };
